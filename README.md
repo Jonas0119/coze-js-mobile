@@ -16,6 +16,8 @@ This monorepo contains the following packages:
 
 ## 🎮 Examples
 
+https://www.coze.cn/open-platform/realtime/playground
+
 Find usage examples for each package in the [examples](./examples) directory:
 
 - [coze-js-node](./examples/coze-js-node) - Node.js Demo for @coze/api
