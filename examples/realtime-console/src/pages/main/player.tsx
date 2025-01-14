@@ -1,3 +1,4 @@
+import React from 'react';
 import { Checkbox } from 'antd';
 import '../../App.css';
 import { type RealtimeClient } from '@coze/realtime-api';
@@ -5,9 +6,11 @@ import { type CheckboxChangeEvent } from 'antd/es/checkbox';
 
 import { LocalManager, LocalStorageKey } from '../../utils/local-manager';
 
-const Player: React.FC<{
+interface PlayerProps {
   clientRef: React.MutableRefObject<RealtimeClient | null>;
-}> = ({ clientRef }) => {
+}
+
+const Player: React.FC<PlayerProps> = ({ clientRef }) => {
   const localManager = new LocalManager();
   const handleToggleVideo = (e: CheckboxChangeEvent) => {
     clientRef.current?.setVideoEnable(e.target.checked);

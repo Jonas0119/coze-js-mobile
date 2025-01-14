@@ -1,98 +1,59 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-
-import {
-  Layout,
-  List,
-  Card,
-  Typography,
-  message,
-  Row,
-  Col,
-  Checkbox,
-} from 'antd';
+import React, { useState, useRef, useCallback } from 'react';
+import { message } from 'antd';
 import {
   RealtimeClient,
   RealtimeAPIError,
   EventNames,
 } from '@coze/realtime-api';
-import { type APIError } from '@coze/api';
-
-import {
-  getBaseUrl,
-  isShowVideo,
-  isTeamWorkspace,
-  redirectToLogin,
-} from '../../utils/utils';
+import { isShowVideo } from '../../utils/utils';
 import { LocalManager, LocalStorageKey } from '../../utils/local-manager';
-import logo from '../../logo.svg';
-import { useAccessToken } from '../../hooks/use-access-token';
-import Settings from './settings';
-import Player from './player';
-import Header from './header';
+import './styles.css';
 
-const { Content, Footer } = Layout;
-const { Text } = Typography;
+// 导入图片资源
+import avatarImage from '../../assets/avatar2.png';
+import microphoneIcon from '../../assets/microphone.png';
+import muteIcon from '../../assets/mute.png';
+import telephoneIcon from '../../assets/telephone.png';
+import hangupIcon from '../../assets/hangup.png';
 
-interface EventData {
-  time: string;
-  type?: string;
-  event: string;
-  /* eslint-disable @typescript-eslint/no-explicit-any */
-  data?: any;
-}
+// 配置信息
+const CONFIG = {
+  accessToken: 'pat_Pcvuj7NOFT4EfHSJMjqZYDOmbB6TxFSSsr1BHqrUCI7inqWbIxz7vYrRnJEcjpex',
+  botId: '7447765883952398386',
+  //voiceId: '7426720361732915209', //湾区大叔
+  //voiceId: '7426720361732964361', //北京小爷
+  //voiceId: '7426720361733177353', //渊博小叔
+  //voiceId: '7426725529589645339', //解说小明
+  //voiceId: '7426725529589628955', //东方浩然
+  //voiceId: '7426725529589596187', //甜美女声
+  //voiceId: '7426725529589661723', //开朗姐姐
+  //voiceId: '7426725529589694491', //甜美悦悦
+  //voiceId: '7426720361732931593', //甜美悦悦
+  voiceId: '7426725529589596187', //湾区大叔
+  baseUrl: 'https://api.coze.cn'
+};
 
 const RealtimeConsole: React.FC = () => {
   const clientRef = useRef<RealtimeClient | null>(null);
-  const [events, setEvents] = useState<EventData[]>([]);
-  const [serverEvents, setServerEvents] = useState<EventData[]>([]);
-  const [autoScrollEvents, setAutoScrollEvents] = useState(true);
-  const [autoScrollServerEvents, setAutoScrollServerEvents] = useState(true);
-  const eventsEndRef = useRef<HTMLDivElement>(null);
-  const serverEventsEndRef = useRef<HTMLDivElement>(null);
+  const [isConnected, setIsConnected] = useState(false);
   const [isMicrophoneOn, setIsMicrophoneOn] = useState(true);
   const localManager = new LocalManager();
-  const { getAccessToken, removeAccessToken, initLocalManager } =
-    useAccessToken();
-
-  const handleSaveSettings = async () => {
-    if (clientRef.current) {
-      clientRef.current.disconnect();
-      clientRef.current = null;
-    }
-    await initLocalManager();
-    setTimeout(() => {
-      handleInitClient();
-    });
-  };
 
   const handleInitClient = () => {
     if (clientRef.current) {
       return;
     }
 
-    const botId = localManager.get(LocalStorageKey.BOT_ID);
-    const voiceId = localManager.get(LocalStorageKey.VOICE_ID);
-    const baseURL = getBaseUrl();
-    const noiseSuppression = JSON.parse(
-      localManager.get(LocalStorageKey.NOISE_SUPPRESSION) || '[]',
-    );
-
-    if (!botId) {
-      message.error('Please select a bot');
-      return;
-    }
-
     const client = new RealtimeClient({
-      accessToken: getAccessToken,
-      botId: botId.trim(),
-      voiceId: voiceId.trim(),
-      // conversationId: '1234567890', // Optional
+      accessToken: CONFIG.accessToken,
+      botId: CONFIG.botId,
+      voiceId: CONFIG.voiceId,
       debug: true,
-      baseURL: baseURL.trim(),
+      baseURL: CONFIG.baseUrl,
       allowPersonalAccessTokenInBrowser: true,
       audioMutedDefault: !isMicrophoneOn,
-      suppressStationaryNoise: noiseSuppression.includes('stationary'),
-      suppressNonStationaryNoise: noiseSuppression.includes('non-stationary'),
+      suppressStationaryNoise: true,
+      suppressNonStationaryNoise: true,
       connectorId: '1024',
       videoConfig: isShowVideo()
         ? {
@@ -103,108 +64,81 @@ const RealtimeConsole: React.FC = () => {
         : undefined,
     });
 
-    // Subscribe to all client and server events
     client.on(EventNames.ALL, handleAllMessage);
-
     clientRef.current = client;
   };
 
-  const handleConnect = async (reconnect = true) => {
+  const handleConnect = async () => {
+    if (!window.RTCPeerConnection) {
+      message.error('您的浏览器不支持WebRTC，请使用现代浏览器。');
+      return;
+    }
+
+    try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        message.error('您的浏览器不支持音频输入，请使用现代浏览器。');
+        return;
+      }
+
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      if (isMobile) {
+        message.info('请允许麦克风访问权限');
+      }
+
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        } 
+      });
+
+      stream.getTracks().forEach(track => track.stop());
+
+    } catch (err: unknown) {
+      console.error('麦克风访问错误:', err);
+      if (err instanceof Error) {
+        switch (err.name) {
+          case 'NotAllowedError':
+          case 'PermissionDeniedError':
+            message.error('麦克风访问被拒绝，请在浏览器设置中允许访问。');
+            break;
+          case 'NotFoundError':
+            message.error('未找到麦克风设备，请确保设备已连接。');
+            break;
+          case 'NotReadableError':
+          case 'TrackStartError':
+            message.error('无法启动麦克风，请确保没有其他应用正在使用它。');
+            break;
+          default:
+            message.error('访问麦克风失败，请检查设备设置。');
+        }
+      } else {
+        message.error('访问麦克风失败，请检查设备设置。');
+      }
+      return;
+    }
+
     handleInitClient();
 
     if (!clientRef.current) {
       return;
     }
+
     try {
-      setEvents([]);
-      setServerEvents([]);
       await clientRef.current.connect();
-      message.success('Connected. Please start the conversation.');
+      setIsConnected(true);
+      message.success('已连接，请开始对话。');
     } catch (e: unknown) {
       if (e instanceof RealtimeAPIError) {
-        message.error(`Failed to connect: ${e.message}`);
-
-        // Refresh token when auth failed
-        if ((e.error as APIError)?.code === 4100 && reconnect) {
-          const isOK = await redirectToLogin(
-            isTeamWorkspace(),
-            localStorage.getItem(LocalStorageKey.WORKSPACE_ID) ?? undefined,
-          );
-          if (!isOK) {
-            removeAccessToken();
-          }
-        }
+        message.error(`连接失败: ${e.message}`);
       } else if (e instanceof Error) {
-        message.error(`An error occurred: ${e.message}`);
+        message.error(`发生错误: ${e.message}`);
       } else {
-        message.error('An unknown error occurred');
+        message.error('发生未知错误');
       }
-      console.log('Connect error', e);
+      console.log('连接错误', e);
     }
-  };
-
-  const handleAllMessage = useCallback((eventName: string, data: any) => {
-    console.log('event', eventName, data);
-
-    if (eventName === EventNames.PLAYER_EVENT) {
-      return;
-    }
-
-    const now = new Date();
-    const time = `${now.toTimeString().split(' ')[0]}.${String(
-      now.getMilliseconds(),
-    ).padStart(3, '0')}`;
-    const type = eventName.split('.')[0]; // server or client
-    const event = eventName.substring(eventName.indexOf('.') + 1); // event name
-
-    setEvents(prevEvents => [...prevEvents, { time, type, event }]);
-
-    if (
-      type === 'server' &&
-      (data?.data?.role === 'user' ||
-        data?.data?.role === 'assistant' ||
-        data?.event_type === 'conversation.created' ||
-        data?.event_type === 'error')
-    ) {
-      setServerEvents(prevEvents => {
-        const mergedEvent = mergeEvent(prevEvents, { time, event, data });
-        if (mergedEvent) {
-          return [...prevEvents.slice(0, -1), mergedEvent];
-        }
-        if (
-          data?.event_type === 'error' ||
-          data?.event_type === 'conversation.created'
-        ) {
-          data.data.content = JSON.stringify(data.data);
-          data.data.role = 'assistant';
-        }
-        return [...prevEvents, { time, event, data }];
-      });
-    }
-  }, []);
-
-  const mergeEvent = (prevEvents: any[], event: any) => {
-    if (prevEvents.length === 0) {
-      return null;
-    }
-    const lastEvent = prevEvents[prevEvents.length - 1];
-    if (
-      lastEvent.event === 'conversation.message.delta' &&
-      event.event === 'conversation.message.delta'
-    ) {
-      return {
-        time: lastEvent.time,
-        event: lastEvent.event,
-        data: {
-          ...lastEvent.data,
-          data: {
-            ...lastEvent.data.data,
-            content: lastEvent.data.data.content + event.data.data.content,
-          },
-        },
-      };
-    }
-    return null;
   };
 
   const handleDisconnect = async () => {
@@ -216,147 +150,97 @@ const RealtimeConsole: React.FC = () => {
       await clientRef.current.disconnect();
       clientRef.current.off(EventNames.ALL, handleAllMessage);
       clientRef.current = null;
-      message.success('Disconnected');
+      setIsConnected(false);
+      message.success('已断开连接');
     } catch (e) {
       if (e instanceof RealtimeAPIError) {
-        message.error(`Failed to disconnect: ${e.message}`);
+        message.error(`断开连接失败: ${e.message}`);
       } else {
-        message.error('Failed to disconnect');
+        message.error('断开连接失败');
       }
       console.error(e);
-      return;
     }
   };
 
-  // useEffect(() => {
-  //   if (!accessToken) {
-  //     return;
-  //   }
-  //   handleInitClient();
-  //   return () => {
-  //     handleDisconnect();
-  //   };
-  // }, [accessToken]);
-
-  const scrollToBottom = (ref: React.RefObject<HTMLDivElement>) => {
-    ref.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  useEffect(() => {
-    // set favicon
-    const link = document.querySelector("link[rel~='icon']");
-    if (link) {
-      link.setAttribute('href', logo);
-    } else {
-      const favicon = document.createElement('link');
-      favicon.rel = 'icon';
-      favicon.href = logo;
-      document.head.appendChild(favicon);
-    }
+  const handleAllMessage = useCallback((eventName: string, data: unknown) => {
+    console.log('event', eventName, data);
   }, []);
 
-  useEffect(() => {
-    if (autoScrollEvents) {
-      scrollToBottom(eventsEndRef);
+  const toggleMicrophone = () => {
+    setIsMicrophoneOn(!isMicrophoneOn);
+    if (clientRef.current) {
+      clientRef.current.setAudioEnable(!isMicrophoneOn);
     }
-  }, [events, autoScrollEvents]);
+  };
 
-  useEffect(() => {
-    if (autoScrollServerEvents) {
-      scrollToBottom(serverEventsEndRef);
-    }
-  }, [serverEvents, autoScrollServerEvents]);
+  // 添加白点组件
+  // const Dots = () => (
+  //   <>
+  //     <div className="dot dot-1" />
+  //     <div className="dot dot-2" />
+  //     <div className="dot dot-3" />
+  //     <div className="dot dot-4" />
+  //   </>
+  // );
+
+  // 添加连接中的动画点
+  const ConnectingDots = () => (
+    <div className="connecting-dots">
+      <div className="connecting-dot" />
+      <div className="connecting-dot" />
+      <div className="connecting-dot" />
+    </div>
+  );
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
-      <Settings onSaveSettings={handleSaveSettings} />
-      <Footer style={{ textAlign: 'center' }}>
-        <Header
-          onConnect={handleConnect}
-          onDisconnect={handleDisconnect}
-          isConnected={clientRef.current?.isConnected}
-          clientRef={clientRef}
-          onToggleMicrophone={setIsMicrophoneOn}
-          isMicrophoneOn={isMicrophoneOn}
-        />
-      </Footer>
-      {isShowVideo() && <Player clientRef={clientRef} />}
-      <Content style={{ padding: '20px' }}>
-        <Row gutter={[16, 16]}>
-          <Col xs={24} sm={24} md={12} lg={12} xl={12}>
-            <Card
-              title="Events"
-              style={{ marginBottom: '20px' }}
-              extra={
-                <Checkbox
-                  checked={autoScrollEvents}
-                  onChange={e => setAutoScrollEvents(e.target.checked)}
-                >
-                  Auto Scroll
-                </Checkbox>
-              }
+    <div className="call-container">
+      <header className="header">
+        <span className="title">心生命</span>
+        <button className="subtitle-button">文字对话</button>
+      </header>
+
+      <div className="avatar-container">
+        <div className={`avatar ${isConnected ? 'avatar-connected' : 'avatar-waiting'}`}>
+          <img src={avatarImage} alt="Avatar" style={{ width: '100%', height: '100%', borderRadius: '50%' }} />
+        </div>
+      </div>
+
+      <div className="controls">
+        <div className="buttons-container">
+          {isConnected ? (
+            <>
+              <button 
+                className="control-button mic-button"
+                onClick={toggleMicrophone}
+              >
+                <img 
+                  src={isMicrophoneOn ? microphoneIcon : muteIcon}
+                  alt="Microphone" 
+                  style={{ opacity: isMicrophoneOn ? 1 : 0.5 }} 
+                />
+              </button>
+              <ConnectingDots />
+              <button 
+                className="control-button hangup-button"
+                onClick={handleDisconnect}
+              >
+                <img src={hangupIcon} alt="Hang up" />
+              </button>
+            </>
+          ) : (
+            <button 
+              className="control-button call-button"
+              onClick={handleConnect}
             >
-              <List
-                dataSource={[...events, { event: 'end', time: '', type: '' }]}
-                style={{ maxHeight: '420px', overflow: 'auto' }}
-                renderItem={item =>
-                  item.event === 'end' ? (
-                    <div ref={eventsEndRef} />
-                  ) : (
-                    <List.Item>
-                      <Text>{item.time}</Text>&nbsp;&nbsp;&nbsp;
-                      <Text>[{item.type}]</Text>&nbsp;&nbsp;&nbsp;
-                      <Text>{item.event}</Text>
-                    </List.Item>
-                  )
-                }
-              />
-            </Card>
-          </Col>
-          <Col xs={24} sm={24} md={12} lg={12} xl={12}>
-            <Card
-              title="User & Assistant"
-              extra={
-                <Checkbox
-                  checked={autoScrollServerEvents}
-                  onChange={e => setAutoScrollServerEvents(e.target.checked)}
-                >
-                  Auto Scroll
-                </Checkbox>
-              }
-            >
-              <List
-                dataSource={[
-                  ...serverEvents,
-                  { event: 'end', time: '', type: '' },
-                ]}
-                style={{ maxHeight: '420px', overflow: 'auto' }}
-                renderItem={item =>
-                  item.event === 'end' ? (
-                    <div ref={serverEventsEndRef} />
-                  ) : (
-                    <List.Item>
-                      <Typography.Paragraph
-                        ellipsis={{
-                          rows: 1,
-                          expandable: true,
-                          symbol: 'Show more',
-                        }}
-                        style={{ margin: 0, width: '100%' }}
-                      >
-                        {item.time}&nbsp;&nbsp;
-                        {item.event}&nbsp;[{item.data?.data?.role}]&nbsp;
-                        {item.data?.data?.content}
-                      </Typography.Paragraph>
-                    </List.Item>
-                  )
-                }
-              />
-            </Card>
-          </Col>
-        </Row>
-      </Content>
-    </Layout>
+              <img src={telephoneIcon} alt="Call" />
+            </button>
+          )}
+        </div>
+        <p className="status-text">
+          {isConnected ? '正在通话中...' : '点我语音对话'}
+        </p>
+      </div>
+    </div>
   );
 };
 

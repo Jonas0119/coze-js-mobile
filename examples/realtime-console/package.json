@@ -121,11 +121,9 @@
     "webpack": "^5.64.4",
     "webpack-dev-server": "^4.6.0",
     "webpack-manifest-plugin": "^4.0.2",
-    "workbox-webpack-plugin": "^6.4.1",
-    "react-router-dom": "~6.28.0"
+    "workbox-webpack-plugin": "^6.4.1"
   },
   "devDependencies": {
-    "@coze-infra/eslint-config": "workspace:*",
     "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^13.5.0",
@@ -133,6 +131,11 @@
     "@types/node": "^20",
     "@types/react": "^18.3.11",
     "@types/react-dom": "^18.3.0",
+    "@typescript-eslint/eslint-plugin": "^8.5.0",
+    "@typescript-eslint/parser": "^8.5.0",
+    "eslint": "9.14.0",
+    "eslint-plugin-react": "~7.37.1",
+    "eslint-plugin-react-hooks": "5.1.0-beta-26f2496093-20240514",
     "surge": "^0.24.6",
     "typescript": "^5.5.3"
   }
