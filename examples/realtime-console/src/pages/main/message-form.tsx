@@ -53,7 +53,7 @@ const MessageForm = forwardRef<MessageFormRef, MessageFormProps>(
           eventData: savedEventData,
         });
       }
-    }, [form]);
+    }, [form, localManager]);
 
     const handleSubmit = async () => {
       try {
