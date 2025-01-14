@@ -76,7 +76,7 @@
   "dependencies": {
     "@ant-design/icons": "^5.5.1",
     "@babel/core": "^7.16.0",
-    "@coze/api": "1.0.17",
+    "@coze/api": "1.0.4",
     "@coze/realtime-api": "1.0.4",
     "@pmmmwh/react-refresh-webpack-plugin": "^0.5.3",
     "@svgr/webpack": "^5.5.0",
