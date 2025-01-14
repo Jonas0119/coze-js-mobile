@@ -15,10 +15,10 @@ importers:
         specifier: ^7.16.0
         version: 7.26.0
       '@coze/api':
-        specifier: ^1.0.4
+        specifier: 1.0.17
         version: 1.0.17(axios@1.7.3)
       '@coze/realtime-api':
-        specifier: ^1.0.4
+        specifier: 1.0.4
         version: 1.0.4(axios@1.7.3)
       '@pmmmwh/react-refresh-webpack-plugin':
         specifier: ^0.5.3
