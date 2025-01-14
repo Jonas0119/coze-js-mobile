@@ -934,9 +934,6 @@ importers:
       react-refresh:
         specifier: ^0.11.0
         version: 0.11.0
-      react-router-dom:
-        specifier: ~6.28.0
-        version: 6.28.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       resolve:
         specifier: ^1.20.0
         version: 1.22.8
@@ -977,9 +974,6 @@ importers:
         specifier: ^6.4.1
         version: 6.6.0(@types/babel__core@7.20.5)(webpack@5.95.0(@swc/core@1.7.39(@swc/helpers@0.5.15)))
     devDependencies:
-      '@coze-infra/eslint-config':
-        specifier: workspace:*
-        version: link:../../config/eslint-config
       '@testing-library/jest-dom':
         specifier: ^5.17.0
         version: 5.17.0
@@ -1001,6 +995,21 @@ importers:
       '@types/react-dom':
         specifier: ^18.3.0
         version: 18.3.1
+      '@typescript-eslint/eslint-plugin':
+        specifier: ^8.5.0
+        version: 8.11.0(@typescript-eslint/parser@8.11.0(eslint@9.14.0(jiti@2.4.2))(typescript@5.6.3))(eslint@9.14.0(jiti@2.4.2))(typescript@5.6.3)
+      '@typescript-eslint/parser':
+        specifier: ^8.5.0
+        version: 8.11.0(eslint@9.14.0(jiti@2.4.2))(typescript@5.6.3)
+      eslint:
+        specifier: 9.14.0
+        version: 9.14.0(jiti@2.4.2)
+      eslint-plugin-react:
+        specifier: ~7.37.1
+        version: 7.37.2(eslint@9.14.0(jiti@2.4.2))
+      eslint-plugin-react-hooks:
+        specifier: 5.1.0-beta-26f2496093-20240514
+        version: 5.1.0-beta-26f2496093-20240514(eslint@9.14.0(jiti@2.4.2))
       surge:
         specifier: ^0.24.6
         version: 0.24.6
